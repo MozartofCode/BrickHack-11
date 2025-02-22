@@ -20,15 +20,13 @@ DATA_FOLDER = os.path.join(BASE_DIR, '../database', 'data')
 os.makedirs(RESUME_FOLDER, exist_ok=True)
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
-
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 @app.route('/store_user_info', methods=['POST'])
 def store_user_info():
-
-  # Retrieve form data and file from the multipart request
+    # Retrieve form data and file from the multipart request
     form_data = request.form.to_dict()
     resume_file = request.files.get("resume")
 
@@ -37,6 +35,7 @@ def store_user_info():
     missing = [field for field in required_fields if field not in form_data]
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
+
 
     # If a resume file was provided, store it locally
     resume_path = ""
@@ -70,12 +69,24 @@ def store_user_info():
     }), 200
 
 
+# Updated endpoint for creating the interviewer session
+@app.route('/create_interviewer', methods=['GET'])
+def create_interviewer():
+    user_session_id = request.args.get("userSessionId")
+    if not user_session_id:
+        return jsonify({"error": "Missing userSessionId"}), 400
 
+    json_filepath = os.path.join(DATA_FOLDER, user_session_id)
+    if not os.path.exists(json_filepath):
+        return jsonify({"error": "Session not found"}), 404
 
-@app.route('/', methods=['GET'])
-def resume_analytics():
-    return False
-
+    try:
+        with open(json_filepath, "r") as f:
+            session_data = json.load(f)
+        # Return the stored session data; your InterviewPage can use fields like questionCount
+        return jsonify(session_data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

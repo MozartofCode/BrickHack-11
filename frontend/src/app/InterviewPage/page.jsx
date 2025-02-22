@@ -1,7 +1,5 @@
 "use client";
-import React from "react";
-import { useState, useEffect } from "react";
-
+import React, { useState, useEffect } from "react";
 
 function InterviewPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +12,15 @@ function InterviewPage() {
     const loadSession = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch("/api/interview-sessions");
+        // Retrieve the user session ID stored after survey submission
+        const userSessionId = localStorage.getItem("userSessionId");
+        if (!userSessionId) {
+          throw new Error("User session not found. Please complete the survey first.");
+        }
+        // Include the userSessionId as a query parameter so the backend can identify the user
+        const response = await fetch(
+          `http://127.0.0.1:5000/create_interviewer?userSessionId=${encodeURIComponent(userSessionId)}`
+        );
         if (!response.ok) {
           throw new Error("Failed to load session");
         }
@@ -36,9 +42,11 @@ function InterviewPage() {
       setCurrentQuestion((curr) => curr + 1);
     }
   };
+
   const handleFinish = () => {
     window.location.href = "/interview-results";
   };
+
   const sectionMarkers = Array.from(
     { length: totalQuestions - 1 },
     (_, i) => (i + 1) * (100 / totalQuestions)

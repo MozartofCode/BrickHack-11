@@ -59,6 +59,10 @@ function SurveyPage() {
           throw new Error("Failed to create Interview session!");
         }
 
+        // Parse response and store the returned user session id in localStorage
+        const data = await response.json();
+        localStorage.setItem("userSessionId", data.data_file);
+
         setSuccess(true);
       } catch (err) {
         setError(err.message);
