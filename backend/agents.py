@@ -9,7 +9,6 @@ from crewai_tools import ScrapeWebsiteTool, SerperDevTool
 import warnings
 warnings.filterwarnings('ignore')
 import os
-from flask import Flask, request, jsonify
 
 load_dotenv()
 openai_api_key = os.getenv('OPENAI_API_KEY')
@@ -22,7 +21,16 @@ from pydantic import BaseModel
 class OutputPydantic(BaseModel):
     approved: bool
 
-def resume_agent():
+
+# Interview agent synthesizes the information given by the user,
+# creates 10 questions for the AI clone to use! 
+# :return: 10 Questions the AI Clone should use
+def interview_agent(difficulty, company, job_position, user_session_id):
+
+    # Resume agent -> Paragraph about person
+    # Company & Job Title -> Paragraph about previous questions (web search)
+    # 
+
     
     # Defining the Tools
     search_tool = SerperDevTool()
@@ -61,3 +69,20 @@ def resume_agent():
     # RUN
     result = resume_crew.kickoff()
     return result.raw
+    return possible_questions
+
+
+
+
+
+def create_AI_clone():
+    return
+
+
+
+def feedback_agent():
+    return
+
+
+def scoring_agent():
+    return
