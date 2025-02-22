@@ -1,9 +1,8 @@
 "use client";
-import React from "react";
+import { React, useState, useCallback } from "react";
+import { useUpload } from "./utilities/runtime-helpers";
 
-import { useUpload } from "../utilities/runtime-helpers";
-
-function MainComponent() {
+function SurveyPage() {
   const [upload, { loading: uploadLoading }] = useUpload();
   const [formData, setFormData] = useState({
     resumeUrl: "",
@@ -217,4 +216,4 @@ function MainComponent() {
   );
 }
 
-export default MainComponent;
+export default SurveyPage;
