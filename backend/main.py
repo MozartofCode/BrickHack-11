@@ -7,42 +7,67 @@ from flask import Flask, request, jsonify
 from agents import resume_agent
 import os
 from flask_cors import CORS
-from flask_pymongo import PyMongo
-from bson import ObjectId
+from datetime import datetime
+from werkzeug.utils import secure_filename
+import json
+
+# Define local folders for storage
+BASE_DIR = os.getcwd()
+RESUME_FOLDER = os.path.join(BASE_DIR, '../database', 'resumes')
+DATA_FOLDER = os.path.join(BASE_DIR, '../database', 'data')
+
+# Ensure the folders exist
+os.makedirs(RESUME_FOLDER, exist_ok=True)
+os.makedirs(DATA_FOLDER, exist_ok=True)
 
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-app.config["MONGO_URI"] = os.getenv("MONGO_URI")
-mongo = PyMongo(app)
-
 
 @app.route('/store_user_info', methods=['POST'])
 def store_user_info():
 
-    try:
-        # Parse JSON from request
-        form_data = request.get_json()
+  # Retrieve form data and file from the multipart request
+    form_data = request.form.to_dict()
+    resume_file = request.files.get("resume")
 
-        # Ensure required fields exist
-        company_name = form_data.get("companyName", "").strip()
-        year = form_data.get("year", "").strip()
-        
-        data = request.get_json()  # Get data from the request body
-        result = mongo.db.myCollection.insert_one(data)
-        return jsonify({"inserted_id": str(result.inserted_id)}), 201
+    # Basic validation: ensure required fields exist
+    required_fields = ["desiredJob", "questionCount", "difficulty", "company"]
+    missing = [field for field in required_fields if field not in form_data]
+    if missing:
+        return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
 
-        if not company_name or not year:
-            return jsonify({"error": "companyName and year are required"}), 400
-
-
-
-
-        return jsonify({"message": f"Balance sheet stored successfully"}), 200
+    # If a resume file was provided, store it locally
+    resume_path = ""
+    if resume_file:
+        # Secure the filename and add a timestamp for uniqueness
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = secure_filename(resume_file.filename)
+        new_filename = f"{timestamp}_{filename}"
+        resume_path = os.path.join(RESUME_FOLDER, new_filename)
+        resume_file.save(resume_path)
     
+    # Add the resume file path to the data (even if blank)
+    form_data["resume_path"] = resume_path
+
+    # Optionally include additional info (like submission time)
+    form_data["submitted_at"] = datetime.now().isoformat()
+
+    # Save all the form info to a JSON file in the data folder
+    json_filename = f"{timestamp}.json"
+    json_filepath = os.path.join(DATA_FOLDER, json_filename)
+    try:
+        with open(json_filepath, "w") as f:
+            json.dump(form_data, f)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+    return jsonify({
+        "message": "Data stored successfully",
+        "data_file": json_filename,
+        "resume_file": os.path.basename(resume_path) if resume_path else ""
+    }), 200
 
 
 
@@ -52,3 +77,5 @@ def resume_analytics():
     return False
 
 
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)

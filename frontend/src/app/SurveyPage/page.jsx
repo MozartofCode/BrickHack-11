@@ -1,11 +1,9 @@
 "use client";
 import { React, useState, useCallback } from "react";
-import { useUpload } from "./utilities/runtime-helpers";
+// Removed the useUpload hook as it's no longer needed
 
 function SurveyPage() {
-  const [upload, { loading: uploadLoading }] = useUpload();
   const [formData, setFormData] = useState({
-    resumeUrl: "",
     desiredJob: "",
     questionCount: 3,
     difficulty: "easy",
@@ -15,11 +13,13 @@ function SurveyPage() {
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+
   const handleFileChange = useCallback((e) => {
     if (e.target.files) {
       setFile(e.target.files[0]);
     }
   }, []);
+
   const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -27,6 +27,7 @@ function SurveyPage() {
       [name]: value,
     }));
   }, []);
+
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
@@ -34,28 +35,27 @@ function SurveyPage() {
       setIsSubmitting(true);
 
       try {
-        let resumeUrl = "";
+        // Create a FormData instance
+        const formDataToSend = new FormData();
+        // Append all text fields
+        formDataToSend.append("desiredJob", formData.desiredJob);
+        formDataToSend.append("questionCount", formData.questionCount);
+        formDataToSend.append("difficulty", formData.difficulty);
+        formDataToSend.append("company", formData.company);
+
+        // Append the resume file if available
         if (file) {
-          const uploadResult = await upload({ file });
-          if (uploadResult.error) {
-            throw new Error(uploadResult.error);
-          }
-          resumeUrl = uploadResult.url;
+          formDataToSend.append("resume", file);
         }
 
-        const response = await fetch("/api/create-interview-session", {
+        // Make the request; let the browser set the Content-Type header automatically
+        const response = await fetch("http://127.0.0.1:5000/store_user_info", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...formData,
-            resumeUrl,
-          }),
+          body: formDataToSend,
         });
 
         if (!response.ok) {
-          throw new Error("Failed to create interview session");
+          throw new Error("Failed to create Interview session!");
         }
 
         setSuccess(true);
@@ -65,7 +65,7 @@ function SurveyPage() {
         setIsSubmitting(false);
       }
     },
-    [file, formData, upload]
+    [file, formData]
   );
 
   if (success) {
@@ -198,10 +198,10 @@ function SurveyPage() {
 
           <button
             type="submit"
-            disabled={isSubmitting || uploadLoading}
+            disabled={isSubmitting}
             className="w-full bg-[#FF8C00] text-white px-6 py-3 rounded hover:bg-[#E67A00] transition-colors disabled:opacity-50"
           >
-            {isSubmitting || uploadLoading ? (
+            {isSubmitting ? (
               <span className="flex items-center justify-center">
                 <span className="animate-spin mr-2">⏳</span>
                 Processing...
