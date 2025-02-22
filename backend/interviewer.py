@@ -10,8 +10,11 @@ from langchain_openai import ChatOpenAI
 from crewai import Agent, Task, Crew
 from crewai_tools import ScrapeWebsiteTool, SerperDevTool
 import warnings
-from google.cloud import texttospeech
+from pathlib import Path
+import openai
+from openai import OpenAI
 
+client = OpenAI()
 warnings.filterwarnings('ignore')
 openai_api_key = os.getenv('OPENAI_API_KEY')
 os.environ["OPENAI_MODEL_NAME"] = 'gpt-3.5-turbo'
@@ -58,27 +61,33 @@ def generate_response(user_response, possible_questions):
 
 
 
-# Use Google Cloud Text-to-Speech to generate an MP3 file from the given text
-def synthesize_speech(text, filename):
+# This function uses OPENAI Text-to-Speech to generate an MP4 file from the given text
+# :param text: The text to turn into response
+# :result: None, saved voice message as response.mp4
+def text_to_speech(text):  
+        
+    speech_file_path = Path(__file__).parent / "response.mp4"
+    response = openai.audio.speech.create(
+    model="tts-1",
+    voice="alloy",
+    input= text
+    )
     
-    client = texttospeech.TextToSpeechClient()
+    response.stream_to_file(speech_file_path)
+    
 
-    synthesis_input = texttospeech.SynthesisInput(text=text)
-    voice = texttospeech.VoiceSelectionParams(
-        language_code="en-US",
-        ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL
-    )
-    audio_config = texttospeech.AudioConfig(
-        audio_encoding=texttospeech.AudioEncoding.MP3
-    )
-
-    response = client.synthesize_speech(
-        input=synthesis_input,
-        voice=voice,
-        audio_config=audio_config
+# This function uses OPENAI Speech-to-Text to transcribe a given audio file
+# :param filename: name of the audio file
+# :return: transcribed text
+def speech_to_text(filename):
+    audio_file = open("C:/Users/berta/Desktop/BrickHack-11/backend/testing.mp4", "rb")
+    transcript = client.audio.transcriptions.create(
+        model="whisper-1",
+        file=audio_file
     )
 
-    # Save the audio to a file
-    with open(filename, "wb") as out:
-        out.write(response.audio_content)
-    return filename
+    return transcript
+
+
+def generate_avatar_video():
+    return
