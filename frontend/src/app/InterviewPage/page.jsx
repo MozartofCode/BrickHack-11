@@ -1,7 +1,9 @@
 "use client";
 import React from "react";
+import { useState, useEffect } from "react";
 
-function MainComponent() {
+
+function InterviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [sessionData, setSessionData] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -106,4 +108,4 @@ function MainComponent() {
   );
 }
 
-export default MainComponent;
+export default InterviewPage;

@@ -1,8 +1,9 @@
 "use client";
 import { React, useState, useCallback } from "react";
-// Removed the useUpload hook as it's no longer needed
+import { useRouter } from "next/navigation"; // Import Next.js router
 
 function SurveyPage() {
+  const router = useRouter(); // Initialize the router
   const [formData, setFormData] = useState({
     desiredJob: "",
     questionCount: 3,
@@ -80,10 +81,10 @@ function SurveyPage() {
             Your interview session has been successfully set up.
           </p>
           <button
-            onClick={() => setSuccess(false)}
+            onClick={() => router.push("/InterviewPage")} // Navigate to InterviewPage
             className="w-full bg-[#FF8C00] text-white px-6 py-2 rounded hover:bg-[#E67A00] transition-colors"
           >
-            Create Another Session
+            Navigate to Interview
           </button>
         </div>
       </div>
