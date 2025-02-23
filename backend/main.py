@@ -125,6 +125,7 @@ def process_user_response():
         return jsonify({'reply': reply})
 
     except:
+        print("THIS IS WHERE ERRORING IT OUT")
         return jsonify({"error": "ERRORED OUTTTT"}), 400
 
 

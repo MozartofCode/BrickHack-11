@@ -10,8 +10,8 @@ function InterviewPage() {
   const [error, setError] = useState(null);
   const [conversation, setConversation] = useState([]);
   const [showVoiceInput, setShowVoiceInput] = useState(false);
+  const [voices, setVoices] = useState([]);
 
-  // Check if userSessionId is stored in localStorage
   useEffect(() => {
     const userSessionId = localStorage.getItem("userSessionId");
     console.log("🧐 Checking userSessionId in localStorage:", userSessionId);
@@ -50,9 +50,19 @@ function InterviewPage() {
     };
 
     loadSession();
+
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      setVoices(availableVoices);
+    };
+
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    } else {
+      loadVoices();
+    }
   }, []);
 
-  // Trigger the voice exchange when the interviewer area is clicked.
   const handleInterviewerClick = () => {
     if (!isLoading && sessionData) {
       if (currentQuestion < totalQuestions) {
@@ -64,8 +74,7 @@ function InterviewPage() {
     }
   };
 
-  // Update conversation history when VoiceInput completes.
-  const handleConversationUpdate = async (userText) => {
+  const handleConversationUpdate = async (userText, aiText) => {
     const userSessionId = localStorage.getItem("userSessionId");
 
     console.log("🚀 Sending data to backend:", { message: userText, userSessionId });
@@ -77,12 +86,12 @@ function InterviewPage() {
     }
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("http://127.0.0.1:5000/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userText,
-          userSessionId
+          userSessionId,
         }),
       });
 
@@ -93,7 +102,10 @@ function InterviewPage() {
         console.error("❌ Backend returned an error:", data.error);
         setError(data.error);
       } else {
-        setConversation((prev) => [...prev, { user: userText, ai: data.reply }]);
+        const updatedConversation = [...conversation, { user: userText, ai: data.reply }];
+        setConversation(updatedConversation);
+
+        speakText(data.reply);
       }
     } catch (error) {
       console.error("❌ Error sending message:", error);
@@ -101,12 +113,10 @@ function InterviewPage() {
     }
   };
 
-  // When voice exchange is complete, hide VoiceInput.
   const handleVoiceCompleted = () => {
     setShowVoiceInput(false);
   };
 
-  // Store the interview conversation in the backend.
   const storeInterview = async () => {
     const userSessionId = localStorage.getItem("userSessionId");
 
@@ -120,13 +130,13 @@ function InterviewPage() {
 
     const payload = {
       conversation,
-      userSessionId
+      userSessionId,
     };
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/store_interview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("http://127.0.0.1:5000/store_interview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -143,31 +153,34 @@ function InterviewPage() {
     }
   };
 
-  // When finishing, store the interview first then redirect.
   const handleFinish = async () => {
-    const userSessionId = localStorage.getItem("userSessionId");
-
-    console.log("📤 Storing interview before finishing... userSessionId:", userSessionId);
-
-    if (!userSessionId) {
-      console.error("❌ userSessionId missing! Cannot store interview.");
-      alert("Error: userSessionId missing. Please restart.");
-      return;
-    }
-
     await storeInterview();
     console.log("✅ Interview stored! Redirecting to FeedbackPage...");
     window.location.href = "/FeedbackPage";
   };
 
-  const sectionMarkers = totalQuestions > 1 
-    ? Array.from({ length: totalQuestions - 1 }, (_, i) => (i + 1) * (100 / totalQuestions))
-    : [];
+  const speakText = (text) => {
+    if (!window.speechSynthesis) {
+      console.error("Speech synthesis not supported.");
+      return;
+    }
+
+    window.speechSynthesis.cancel(); 
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+
+    const voice = voices.find((v) => v.name.includes("Google US English")) || voices[0];
+    if (voice) {
+      utterance.voice = voice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+  };
 
   return (
     <div className="min-h-screen bg-white dark:bg-black p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Interviewer area */}
         <div
           onClick={handleInterviewerClick}
           className={`bg-gray-50 dark:bg-black p-8 rounded-lg border-2 border-[#FF8C00] mb-6 transition-all duration-200 
@@ -181,16 +194,10 @@ function InterviewPage() {
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 relative mb-2">
               <div className="bg-[#FF8C00] h-4 rounded-full transition-all duration-300"
                 style={{ width: `${(currentQuestion / totalQuestions) * 100}%` }} />
-              {sectionMarkers.map((position, index) => (
-                <div key={index} className="absolute top-0 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600"
-                  style={{ left: `${position}%` }} />
-              ))}
             </div>
 
             <div className="h-32 overflow-y-auto p-2 bg-gray-100 dark:bg-gray-800 rounded">
-              {isLoading ? (
-                <div className="animate-spin text-4xl">⏳</div>
-              ) : conversation.length > 0 ? (
+              {conversation.length > 0 ? (
                 conversation.map((item, idx) => (
                   <div key={idx} className="mb-2">
                     <div className="text-sm text-blue-600">You: {item.user}</div>
@@ -206,11 +213,8 @@ function InterviewPage() {
           </div>
         </div>
 
-        {error && <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded mb-6">{error}</div>}
-
         <div className="flex justify-end mb-4">
-          <button onClick={handleFinish} disabled={currentQuestion === 0}
-            className="w-full sm:w-auto bg-[#FF8C00] text-white px-6 py-3 rounded hover:bg-[#E67A00] transition-colors disabled:opacity-50">
+          <button onClick={handleFinish} className="bg-[#FF8C00] text-white px-6 py-3 rounded hover:bg-[#E67A00] transition">
             Finish Interview
           </button>
         </div>
