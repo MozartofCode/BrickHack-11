@@ -10,6 +10,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 import json
 from interviewer import generate_response, feedback_agent, interview_agent
+from pydantic import BaseModel
 
 
 # Define local folders for storage
@@ -25,6 +26,13 @@ os.makedirs(DATA_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Define output schema
+class OutputPydantic(BaseModel):
+    communication: int
+    content: int
+    confidence: int
+    feedback: str 
 
 
 @app.route('/store_user_info', methods=['POST'])
@@ -110,9 +118,10 @@ def create_interviewer():
 def process_user_response():
     data = request.get_json()
     user_message = data.get('message', '')
-    filename = data["filename"]
     
-    reply = generate_response(user_message, filename)
+    #reply = generate_response(user_message, filename)
+
+    reply = "Software engineer?"
     return jsonify({'reply': reply})
 
 
@@ -142,24 +151,36 @@ def store_interview():
     return jsonify({"message": "Interview stored successfully", "filename": filename}), 200
 
 
-
-@app.route('/get_feedback', methods=["POST"])
+@app.route('/get_feedback', methods=["GET"])
 def get_feedback():
+    user_session_id = request.args.get("userSessionId")  # Get from query params
+    if not user_session_id:
+        return jsonify({"error": "Missing 'userSessionId' in request"}), 400
 
-    data = request.get_json()
-    if not data or "filename" not in data:
-        return jsonify({"error": "Missing 'filename' in request data"}), 400
+    # Ensure the filename does not contain double .json
+    if not user_session_id.endswith(".json"):
+        filename = f"{user_session_id}.json"
+    else:
+        filename = user_session_id 
 
-    filename = data["filename"]
-    # Call your backend function to generate feedback and scores
-    result = feedback_agent(filename)
+    filepath = os.path.join(INTERVIEWS_FOLDER, filename)
+
+    if not os.path.exists(filepath):
+        return jsonify({"error": "Feedback not found"}), 404
+
+
+    try:
+        output = feedback_agent(filepath)
+        
+        print("printing the output")
+        print(output)
+
+        validated_output = OutputPydantic(**output).model_dump()
+        return jsonify(validated_output), 200
     
-    # If the function returns an error, send it with a 400 status
-    if isinstance(result, dict) and "error" in result:
-        return jsonify(result), 400
-    
-    # Otherwise, return the successful result
-    return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 

@@ -183,11 +183,10 @@ def feedback_agent(filename):
             interview_data = json.load(f)
     except Exception as e:
         return {"error": f"Failed to load interview data: {e}"}
-    
-    # Convert the interview data into a text format for the agent prompt
+
     interview_text = json.dumps(interview_data, indent=2)
-    
-    # Define Agents
+
+    # Agents
     feedbacker = Agent(
         role="Feedback Giver Agent",
         goal="Provide detailed and constructive feedback on the candidate's interview performance.",
@@ -203,15 +202,15 @@ def feedback_agent(filename):
         verbose=False,
         allow_delegation=False,
     )
-   
-    # Define TASKS    
+
+    # Tasks    
     give_feedback = Task(
         description=(
             "Analyze the following interview data and provide detailed feedback on the candidate's performance. "
             "Focus on communication clarity, the depth and relevance of content, and the candidate's confidence. "
         ),
         expected_output=(
-           f"Give an extensive paragraph about the user's performance. Interview Data is given as {interview_text}"
+            f"Give an extensive paragraph about the user's performance. Interview Data is given as {interview_text}"
         ),
         agent=feedbacker
     )
@@ -235,10 +234,31 @@ def feedback_agent(filename):
     )
 
     results = resume_crew.kickoff()
-     
-    # Convert results into the desired Pydantic format.
+
+    print("DEBUG: Raw results type ->", type(results))
+    print("DEBUG: Raw results value ->", results)
+
+    # Extract raw results
+    if hasattr(results, "raw"):  
+        results = results.raw  # Extract raw string
+
+    print("DEBUG: Processed results type ->", type(results))
+    print("DEBUG: Processed results value ->", results)
+
+    # ✅ FIX: If results is a string, convert it to a dictionary
+    if isinstance(results, str):
+        try:
+            print("DEBUG: Attempting to JSON decode results...")
+            results = json.loads(results)  # Convert string to dictionary
+        except json.JSONDecodeError:
+            return {"error": "Failed to parse CrewOutput into valid JSON format"}
+
+    # Ensure results is now a dictionary before passing to Pydantic
+    if not isinstance(results, dict):
+        return {"error": f"Unexpected response format. Expected dict, got {type(results)}"}
+
     try:
         output = OutputPydantic(**results)
-        return output
+        return output.dict()  # Convert Pydantic model to JSON-serializable dict
     except Exception as e:
         return {"error": f"Failed to parse results into schema: {e}"}

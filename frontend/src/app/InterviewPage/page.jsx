@@ -84,7 +84,7 @@ function InterviewPage() {
   // When finishing, store the interview first then redirect.
   const handleFinish = async () => {
     await storeInterview();
-    window.location.href = "/interview-results";
+    window.location.href = "/FeedbackPage";
   };
 
   const sectionMarkers = totalQuestions > 1 
