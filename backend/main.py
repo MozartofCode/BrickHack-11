@@ -48,21 +48,21 @@ def store_user_info():
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
 
+    # Generate timestamp for file naming
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-    # If a resume file was provided, store it locally
+    # If a resume file was provided, store it locally with only timestamp as the filename
     resume_path = ""
     if resume_file:
-        # Secure the filename and add a timestamp for uniqueness
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        filename = secure_filename(resume_file.filename)
-        new_filename = f"{timestamp}_{filename}"
+        extension = os.path.splitext(secure_filename(resume_file.filename))[-1]  # Get file extension
+        new_filename = f"{timestamp}{extension}"  # Only use timestamp
         resume_path = os.path.join(RESUME_FOLDER, new_filename)
         resume_file.save(resume_path)
-    
+
     # Add the resume file path to the data (even if blank)
     form_data["resume_path"] = resume_path
 
-    # Optionally include additional info (like submission time)
+    # Include additional info (like submission time)
     form_data["submitted_at"] = datetime.now().isoformat()
 
     # Save all the form info to a JSON file in the data folder
@@ -81,6 +81,7 @@ def store_user_info():
     }), 200
 
 
+
 # Updated endpoint for creating the interviewer session
 @app.route('/create_interviewer', methods=['GET'])
 def create_interviewer():
@@ -93,17 +94,28 @@ def create_interviewer():
     try:
         
         possible_questions = interview_agent(user_session_id)
+        print("HERE IS THE POSSIBLE QUESTION")
+        print(possible_questions)
+
         filename = f"{user_session_id}"
         filepath = os.path.join(QUESTIONS_FOLDER, filename)
-    
+
+        print("TRYING HARD HERE") 
+        crew_data = json.loads(json.dumps(possible_questions, default=str))
+
+        print("✅ Crew Data Before Saving:", json.dumps(crew_data, indent=4))  # Debug print
+
         try:
             with open(filepath, "w") as f:
-                json.dump(possible_questions, f)
+                json.dump(crew_data, f, indent=4)
 
         except Exception as e:
             return jsonify({"error": str(e)}), 500
         
-        return jsonify("Successfully created the interviewer and questions!"), 200
+        return jsonify({
+            "message": "Successfully created the interviewer and questions!",
+            "questions": crew_data
+        }), 200
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500

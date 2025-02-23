@@ -20,6 +20,8 @@ load_dotenv()
 
 BASE_DIR = os.getcwd()
 QUESTIONS_FOLDER = os.path.join(BASE_DIR, '../database', 'questions')
+DATA_FOLDER = os.path.join(BASE_DIR, '../database', 'data')
+RESUME_FOLDER = os.path.join(BASE_DIR, '../database', 'resumes')
 
 # Define output schema
 class OutputPydantic(BaseModel):
@@ -92,7 +94,9 @@ def generate_response(user_response, filename):
     return result.raw
 
 
-def load_and_analyze_pdf(filename: str):
+def load_and_analyze_pdf(filename):
+
+    filename = os.path.join(RESUME_FOLDER, filename)
     
     if not os.path.exists(filename):
         return {"error": f"File '{filename}' not found."}
@@ -115,12 +119,14 @@ def load_and_analyze_pdf(filename: str):
 # creates 10 questions for the AI clone to use! 
 # :return: 10 Questions the AI Clone should use
 def interview_agent(filename):
+     
+    filename = os.path.join(DATA_FOLDER, filename)
 
     try:
         with open(filename, "r", encoding="utf-8") as f:
             data = json.load(f)
     except Exception as e:
-        return {"error": f"Failed to load interview data: {e}"}
+        return {"error": f"Failed to load Survey data!!: {e}"}
     
     # Extract values from the loaded JSON data
     difficulty = data.get("difficulty")
@@ -184,7 +190,7 @@ def interview_agent(filename):
 
     # Running the crew to get possible interview questions
     possible_questions = resume_crew.kickoff()
-    return possible_questions
+    return possible_questions.raw
 
 
 def feedback_agent(filename):
