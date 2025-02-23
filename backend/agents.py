@@ -75,10 +75,6 @@ def interview_agent(difficulty, company, job_position, user_session_id):
 
 
 
-def create_AI_clone():
-    return
-
-
 
 def feedback_agent():
     return

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import VoiceInput from "./voice"; // adjust the path as necessary
 
 function InterviewPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -7,6 +8,7 @@ function InterviewPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(3);
   const [error, setError] = useState(null);
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
 
   useEffect(() => {
     const loadSession = async () => {
@@ -39,7 +41,10 @@ function InterviewPage() {
 
   const handleInterviewerClick = () => {
     if (!isLoading && sessionData) {
+      // Advance to the next question
       setCurrentQuestion((curr) => curr + 1);
+      // Toggle on the voice input to start the conversation
+      setShowVoiceInput(true);
     }
   };
 
@@ -111,6 +116,9 @@ function InterviewPage() {
             Question {currentQuestion} of {totalQuestions}
           </div>
         </div>
+
+        {/* Conditionally render the voice input component */}
+        {showVoiceInput && <VoiceInput />}
       </div>
     </div>
   );

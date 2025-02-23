@@ -1,8 +1,5 @@
-#
-#
-#
-#
-#
+# @ Author: Bertan Berker
+# @ Language: Python
 
 import os
 from dotenv import load_dotenv
@@ -14,10 +11,11 @@ from pathlib import Path
 import openai
 from openai import OpenAI
 
-client = OpenAI()
 warnings.filterwarnings('ignore')
 openai_api_key = os.getenv('OPENAI_API_KEY')
 os.environ["OPENAI_MODEL_NAME"] = 'gpt-3.5-turbo'
+#client = OpenAI()
+load_dotenv()
 
 
 def generate_response(user_response, possible_questions):
@@ -25,7 +23,7 @@ def generate_response(user_response, possible_questions):
     # Agents
     responding_agent = Agent(
         role= "Interviewer Agent",
-        goal= f"Your goal is to respond to the {user_response} by either asking a follow-up question or by continuing to ask one of the 
+        goal= f"Your goal is to respond to the {user_response} by either asking a follow-up question or by continuing to ask one of the \
          questions in the list of {possible_questions}",
         backstory="You are a professional interviewer who have done this for the last 30 years. You interview candidates for prestigious jobs\
             and you are known for asking very thoughtful questions that get incredibly inside into who the candidates are and how qualified they are\

@@ -1,15 +1,16 @@
-# @Author: Bertan Berker
-# @Language: Python (Flask)
-# This file is the main API file for the backend
-# It is responsible for handling all the requests and responses and interacting with the AI agents
+# # @Author: Bertan Berker
+# # @Language: Python (Flask)
+# # This file is the main API file for the backend
+# # It is responsible for handling all the requests and responses and interacting with the AI agents
 
 from flask import Flask, request, jsonify
-from agents import resume_agent
 import os
 from flask_cors import CORS
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import json
+from interviewer import generate_response
+
 
 # Define local folders for storage
 BASE_DIR = os.getcwd()
@@ -87,6 +88,17 @@ def create_interviewer():
         return jsonify(session_data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/process', methods=['POST'])
+def process_user_response():
+    data = request.get_json()
+    user_message = data.get('message', '')
+    
+    reply = (generate_response(user_message, "What do you do for a living? What is your age?"))
+
+    return jsonify({'reply': reply})
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
