@@ -40,7 +40,7 @@ function InterviewPage() {
         console.log("📩 Received session data:", data);
 
         setSessionData(data);
-        setTotalQuestions(data.questionCount || 3);
+        setTotalQuestions((data.questionCount || 3));
         setIsLoading(false);
       } catch (err) {
         setError(err.message);
@@ -206,7 +206,7 @@ function InterviewPage() {
                 ))
               ) : (
                 <div className="text-center text-gray-700 dark:text-gray-300 text-xl font-inter">
-                  {currentQuestion === 0 ? "Click here to start the interview" : `Question ${currentQuestion} of ${totalQuestions}`}
+                  {currentQuestion === 0 ? "To start your interview: click here and tell us about yourself, then keep clicking to continue responding" : `Question ${currentQuestion} of ${totalQuestions}`}
                 </div>
               )}
             </div>
