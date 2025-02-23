@@ -57,7 +57,7 @@ def generate_response(user_response, filename):
          questions in the list of {possible_questions}",
         backstory="You are a professional interviewer who have done this for the last 30 years. You interview candidates for prestigious jobs\
             and you are known for asking very thoughtful questions that get incredibly inside into who the candidates are and how qualified they are\
-            for the job. ",
+            for the job. You don't repeat questions and you make sure you ask the best possible questions to the candidate.",
         verbose=False,
         allow_delegation=False,
     )
@@ -67,7 +67,8 @@ def generate_response(user_response, filename):
         description=(
             f"Analyze the candidate's answer provided in {user_response} and consider the list of available questions in {possible_questions}. "
             "Then, craft a single, insightful follow-up question that either dives deeper into the candidate's response or selects the most appropriate question from the list. "
-            "Your question should reflect your extensive 30-year experience in interviewing, be engaging, and maintain a professional tone throughout the conversation."
+            "Your question should reflect your extensive 30-year experience in interviewing, be engaging, and maintain a professional tone throughout the conversation. Do not repeat"
+            "a question you asked before and make sure to ask your questions in an understandable clear way."
         ),
         expected_output=(
             "A single, well-formulated interview question in plain text. This question should either follow up on the candidate's previous answer or be chosen from the provided \
@@ -89,6 +90,9 @@ def generate_response(user_response, filename):
     return result.raw
 
 
+# This function loads and returns the pdf in text format for the agents to use
+# :param filename: resume filename
+# :return: Resume in text format
 def load_and_analyze_pdf(filename):
 
     filename = os.path.join(RESUME_FOLDER, filename)
