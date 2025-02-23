@@ -18,6 +18,9 @@ openai_api_key = os.getenv('OPENAI_API_KEY')
 os.environ["OPENAI_MODEL_NAME"] = 'gpt-3.5-turbo'
 load_dotenv()
 
+BASE_DIR = os.getcwd()
+QUESTIONS_FOLDER = os.path.join(BASE_DIR, '../database', 'questions')
+
 # Define output schema
 class OutputPydantic(BaseModel):
     communication: int
@@ -33,6 +36,11 @@ class OutputPydantic(BaseModel):
 # :return: a question
 def generate_response(user_response, filename):
     
+    print("INSIDEEE")
+    print(filename)
+    filename = os.path.join(QUESTIONS_FOLDER, filename)
+    print(filename)
+
     try:
         with open(filename, "r", encoding="utf-8") as f:
             possible_questions = json.load(f)
@@ -41,6 +49,9 @@ def generate_response(user_response, filename):
     
     # Convert the interview data into a text format for the agent prompt
     possible_questions = json.dumps(possible_questions, indent=2)
+
+    print("POSSIBLE QS HERE")
+    print(possible_questions)
 
     # Agents
     responding_agent = Agent(

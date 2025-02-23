@@ -18,6 +18,7 @@ BASE_DIR = os.getcwd()
 RESUME_FOLDER = os.path.join(BASE_DIR, '../database', 'resumes')
 DATA_FOLDER = os.path.join(BASE_DIR, '../database', 'data')
 INTERVIEWS_FOLDER = os.path.join(BASE_DIR, '../database', 'interviews')
+QUESTIONS_FOLDER = os.path.join(BASE_DIR, '../database', 'questions')
 
 # Ensure the folders exist
 os.makedirs(INTERVIEWS_FOLDER, exist_ok=True)
@@ -89,41 +90,42 @@ def create_interviewer():
     if not user_session_id:
         return jsonify({"error": "Missing userSessionId"}), 400
 
-    json_filepath = os.path.join(DATA_FOLDER, user_session_id)
-    
-    if not os.path.exists(json_filepath):
-        return jsonify({"error": "Session not found"}), 404
-
     try:
-        # Retrieve the possible questions from the interview agent
+        
         possible_questions = interview_agent(user_session_id)
+        filename = f"{user_session_id}"
+        filepath = os.path.join(QUESTIONS_FOLDER, filename)
+    
+        try:
+            with open(filepath, "w") as f:
+                json.dump(possible_questions, f)
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
         
-        # Load the existing session data
-        with open(json_filepath, "r") as f:
-            session_data = json.load(f)
-        
-        # Save the possible_questions under the "questions" key
-        session_data["questions"] = possible_questions
-        
-        # Write the updated session data back to the file
-        with open(json_filepath, "w") as f:
-            json.dump(session_data, f, indent=2)
-        
-        return jsonify(session_data), 200
+        return jsonify("Successfully created the interviewer and questions!"), 200
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/process', methods=['POST'])
 def process_user_response():
-    data = request.get_json()
-    user_message = data.get('message', '')
-    
-    #reply = generate_response(user_message, filename)
+    try:
+        data = request.get_json()
+        user_message = data.get('message', '')
+        filename = data.get('userSessionId')
+        
+        print("This is my filename:")
+        print(filename)
+        print("TRYING TO PRINT HERE")
+        reply = generate_response(user_message, filename)
+        print("hereeeee")
+        print(reply)
+        return jsonify({'reply': reply})
 
-    reply = "Software engineer?"
-    return jsonify({'reply': reply})
-
+    except:
+        return jsonify({"error": "ERRORED OUTTTT"}), 400
 
 
 @app.route('/store_interview', methods=['POST'])
