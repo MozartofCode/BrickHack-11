@@ -9,7 +9,7 @@ from flask_cors import CORS
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import json
-from interviewer import generate_response
+from interviewer import generate_response, feedback_agent, interview_agent
 
 
 # Define local folders for storage
@@ -75,18 +75,32 @@ def store_user_info():
 # Updated endpoint for creating the interviewer session
 @app.route('/create_interviewer', methods=['GET'])
 def create_interviewer():
+
     user_session_id = request.args.get("userSessionId")
+    
     if not user_session_id:
         return jsonify({"error": "Missing userSessionId"}), 400
 
     json_filepath = os.path.join(DATA_FOLDER, user_session_id)
+    
     if not os.path.exists(json_filepath):
         return jsonify({"error": "Session not found"}), 404
 
     try:
+        # Retrieve the possible questions from the interview agent
+        possible_questions = interview_agent(user_session_id)
+        
+        # Load the existing session data
         with open(json_filepath, "r") as f:
             session_data = json.load(f)
-        # Return the stored session data; your InterviewPage can use fields like questionCount
+        
+        # Save the possible_questions under the "questions" key
+        session_data["questions"] = possible_questions
+        
+        # Write the updated session data back to the file
+        with open(json_filepath, "w") as f:
+            json.dump(session_data, f, indent=2)
+        
         return jsonify(session_data), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -96,9 +110,9 @@ def create_interviewer():
 def process_user_response():
     data = request.get_json()
     user_message = data.get('message', '')
+    filename = data["filename"]
     
-    reply = (generate_response(user_message, "What do you do for a living? What is your age?"))
-
+    reply = generate_response(user_message, filename)
     return jsonify({'reply': reply})
 
 
@@ -126,6 +140,27 @@ def store_interview():
         return jsonify({"error": str(e)}), 500
 
     return jsonify({"message": "Interview stored successfully", "filename": filename}), 200
+
+
+
+@app.route('/get_feedback', methods=["POST"])
+def get_feedback():
+
+    data = request.get_json()
+    if not data or "filename" not in data:
+        return jsonify({"error": "Missing 'filename' in request data"}), 400
+
+    filename = data["filename"]
+    # Call your backend function to generate feedback and scores
+    result = feedback_agent(filename)
+    
+    # If the function returns an error, send it with a 400 status
+    if isinstance(result, dict) and "error" in result:
+        return jsonify(result), 400
+    
+    # Otherwise, return the successful result
+    return jsonify(result)
+
 
 
 if __name__ == "__main__":
