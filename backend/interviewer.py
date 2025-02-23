@@ -1,7 +1,7 @@
 # @ Author: Bertan Berker
 # @ Language: Python
-# This is the file that contains functions about question generating, feedback giving
-# and response from an interviewer
+# This is the file that contains AI Agents that do question generating, feedback giving
+# and response creation from an interviewer
 
 import os
 from dotenv import load_dotenv
@@ -23,7 +23,8 @@ QUESTIONS_FOLDER = os.path.join(BASE_DIR, '../database', 'questions')
 DATA_FOLDER = os.path.join(BASE_DIR, '../database', 'data')
 RESUME_FOLDER = os.path.join(BASE_DIR, '../database', 'resumes')
 
-# Define output schema
+
+# Output Schema for Feedback
 class OutputPydantic(BaseModel):
     communication: int
     content: int
@@ -38,10 +39,7 @@ class OutputPydantic(BaseModel):
 # :return: a question
 def generate_response(user_response, filename):
     
-    print("INSIDEEE")
-    print(filename)
     filename = os.path.join(QUESTIONS_FOLDER, filename)
-    print(filename)
 
     try:
         with open(filename, "r", encoding="utf-8") as f:
@@ -51,9 +49,6 @@ def generate_response(user_response, filename):
     
     # Convert the interview data into a text format for the agent prompt
     possible_questions = json.dumps(possible_questions, indent=2)
-
-    print("POSSIBLE QS HERE")
-    print(possible_questions)
 
     # Agents
     responding_agent = Agent(
@@ -193,6 +188,9 @@ def interview_agent(filename):
     return possible_questions.raw
 
 
+# Feedback Agent is responsible for giving feedback to the user
+# :param filename: interview data filename
+# :return: Feedback in the format of "Communication, Content, Confidence and overall feedback"
 def feedback_agent(filename):
 
     try:
@@ -252,20 +250,12 @@ def feedback_agent(filename):
 
     results = resume_crew.kickoff()
 
-    print("DEBUG: Raw results type ->", type(results))
-    print("DEBUG: Raw results value ->", results)
-
     # Extract raw results
     if hasattr(results, "raw"):  
         results = results.raw  # Extract raw string
 
-    print("DEBUG: Processed results type ->", type(results))
-    print("DEBUG: Processed results value ->", results)
-
-    # ✅ FIX: If results is a string, convert it to a dictionary
     if isinstance(results, str):
         try:
-            print("DEBUG: Attempting to JSON decode results...")
             results = json.loads(results)  # Convert string to dictionary
         except json.JSONDecodeError:
             return {"error": "Failed to parse CrewOutput into valid JSON format"}
