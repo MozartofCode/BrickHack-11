@@ -16,8 +16,10 @@ from interviewer import generate_response
 BASE_DIR = os.getcwd()
 RESUME_FOLDER = os.path.join(BASE_DIR, '../database', 'resumes')
 DATA_FOLDER = os.path.join(BASE_DIR, '../database', 'data')
+INTERVIEWS_FOLDER = os.path.join(BASE_DIR, '../database', 'interviews')
 
 # Ensure the folders exist
+os.makedirs(INTERVIEWS_FOLDER, exist_ok=True)
 os.makedirs(RESUME_FOLDER, exist_ok=True)
 os.makedirs(DATA_FOLDER, exist_ok=True)
 
@@ -98,6 +100,32 @@ def process_user_response():
     reply = (generate_response(user_message, "What do you do for a living? What is your age?"))
 
     return jsonify({'reply': reply})
+
+
+
+@app.route('/store_interview', methods=['POST'])
+def store_interview():
+    data = request.get_json()
+    conversation = data.get('conversation')
+    user_session_id = data.get('userSessionId')
+    
+    if not user_session_id:
+        return jsonify({"error": "Missing userSessionId"}), 400
+    if not conversation:
+        return jsonify({"error": "Missing conversation data"}), 400
+
+    # Build a filename that includes the user session id and a timestamp
+    # timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    filename = f"{user_session_id}"
+    filepath = os.path.join(INTERVIEWS_FOLDER, filename)
+    
+    try:
+        with open(filepath, "w") as f:
+            json.dump(data, f)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    return jsonify({"message": "Interview stored successfully", "filename": filename}), 200
 
 
 if __name__ == "__main__":

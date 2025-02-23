@@ -1,10 +1,7 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 
-const VoiceInput = () => {
-  const [transcript, setTranscript] = useState('');
-  const [reply, setReply] = useState('');
-
+const VoiceInput = ({ onConversationUpdate, onCompleted }) => {
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -17,8 +14,6 @@ const VoiceInput = () => {
     
     recognition.onresult = (event) => {
       const speechToText = event.results[0][0].transcript;
-      setTranscript(speechToText);
-      // Send text to backend after capturing speech
       sendToBackend(speechToText);
     };
 
@@ -26,7 +21,6 @@ const VoiceInput = () => {
       console.error('Speech recognition error:', error);
     };
 
-    // Start listening when the component mounts or on user action.
     recognition.start();
   }, []);
 
@@ -39,11 +33,17 @@ const VoiceInput = () => {
       });
       const data = await response.json();
 
-      // Use text-to-speech to speak the response
+      // Speak the AI response.
       speakText(data.reply);
-      // Save the backend reply in state so it can be rendered
-      setReply(data.reply);
-      
+
+      // Update conversation history in InterviewPage.
+      if (onConversationUpdate) {
+        onConversationUpdate(text, data.reply);
+      }
+      // Signal that this exchange is complete.
+      if (onCompleted) {
+        onCompleted();
+      }
     } catch (error) {
       console.error('Error communicating with the backend:', error);
     }
@@ -54,12 +54,7 @@ const VoiceInput = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  return (
-    <div>
-      <p>You said: {transcript}</p>
-      <p>Response: {reply}</p>
-    </div>
-  );
+  return null; // No UI from this component.
 };
 
 export default VoiceInput;
